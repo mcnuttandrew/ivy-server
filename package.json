@@ -1,0 +1,24 @@
+{
+  "name": "hydra-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "serve": "node server.js",
+    "lint": "eslint server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^4.18.2",
+    "eslint-config-prettier": "^6.1.0",
+    "eslint-config-uber-es2015": "^3.0.1",
+    "eslint-plugin-prettier": "^3.1.0",
+    "prettier": "^1.18.2"
+  },
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "express": "^4.17.1",
+    "mongodb": "^3.5.1"
+  }
+}

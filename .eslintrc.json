@@ -1,0 +1,26 @@
+{
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "extends": [
+    "uber-es2015",
+    "prettier"
+  ],
+  "rules": {
+    "consistent-return": 0,
+    "max-params": [
+      "error",
+      6
+    ],
+    "object-curly-spacing": 0,
+    "no-implicit-coercion": 0,
+    "comma-dangle": 0,
+    "max-len": 0,
+    "no-process-env": "off",
+    "no-console": "off"
+  },
+  "plugins": [
+    "prettier"
+  ]
+}
