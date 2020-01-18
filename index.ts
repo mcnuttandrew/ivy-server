@@ -1,7 +1,8 @@
-const MongoClient = require("mongodb").MongoClient;
-const express = require("express");
+import {MongoClient}  from "mongodb";
+import express  from "express";
 const app = express();
-const bodyParser = require('body-parser');
+import bodyParser  from 'body-parser';
+import {fetch} from './src/utils';
 
 
 const PORT = process.env.PORT || 5000;
@@ -20,28 +21,45 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
 app.get("/search", (req, res) => {
-  console.log(req);
-  res.sendStatus(200);
+  console.log('search');
+  const searchKey = 'test';
+  const query = {$or: [
+    ['templateName', 'templateDescription', 'creator'].map(key => {
+     return {[`template.${key}`]: {$regex: searchKey, $options: "i"}} 
+    })
+  ]}
+  fetch(req.app.locals.db, 'programs', query, 20).then((result: any) => {
+    console.log('search', result.length);
+    res.send(JSON.stringify(result));
+  });
 });
 
 app.get("/recent", (req, res) => {
-  console.log(req);
-  res.sendStatus(200);
+  console.log('recent');
+  fetch(req.app.locals.db, 'programs', null, 20).then((result: any) => {
+    console.log(result.length)
+    res.send(JSON.stringify(result));
+  });
 });
 
 app.get('/data-field', (req, res) => {
+  console.log('data field');
   console.log(req);
   res.sendStatus(200);
 });
 
-function constructMetaData(template) {
+app.get('/img-lookup', (req, res) => {
+  console.log('img-lookup');
+  console.log(req);
+  res.sendStatus(200);
+});
 
-}
 
 app.post('/publish', (req, res) => {
   const body = req.body;
   const {template, templateImg, creator} = body;
-  const metaData = constructMetaData(template);
+  const db = req.app.locals.db;
+  db.collection('programs').insertOne({template, templateImg, creator});
 
   res.sendStatus(200);
 });
