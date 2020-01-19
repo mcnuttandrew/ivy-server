@@ -3,22 +3,25 @@ import express  from "express";
 const app = express();
 import bodyParser  from 'body-parser';
 import {fetch} from './src/utils';
+import cors from 'cors';
 
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGODB_URI || "mongodb://localhost:27017";
 const MONGO_DB = process.env.MONGODB || "HYDRA_SERVER";
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
+app.use(cors());
+// app.use((req, res, next) => {
+//   res.header('Access-Control-Allow-Origin', '*');
+//   res.header(
+//     'Access-Control-Allow-Headers',
+//     'Origin, X-Requested-With, Content-Type, Accept'
+//   );
+//   next();
+// });
+
 
 app.get("/search", (req, res) => {
   console.log('search');
