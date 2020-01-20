@@ -1,46 +1,36 @@
-import {MongoClient}  from "mongodb";
-import express  from "express";
+import {MongoClient} from 'mongodb';
+import express from 'express';
 const app = express();
-import bodyParser  from 'body-parser';
+import bodyParser from 'body-parser';
 import {fetch} from './src/utils';
 import cors from 'cors';
 
-
 const PORT = process.env.PORT || 5000;
-const MONGO_URL = process.env.MONGODB_URI || "mongodb://localhost:27017";
-const MONGO_DB = process.env.MONGODB || "HYDRA_SERVER";
+const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017';
+const MONGO_DB = process.env.MONGODB || 'HYDRA_SERVER';
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(cors());
-// app.use((req, res, next) => {
-//   res.header('Access-Control-Allow-Origin', '*');
-//   res.header(
-//     'Access-Control-Allow-Headers',
-//     'Origin, X-Requested-With, Content-Type, Accept'
-//   );
-//   next();
-// });
 
-
-app.get("/search", (req, res) => {
-  console.log('search');
-  const searchKey = 'test';
-  const query = {$or: [
-    ['templateName', 'templateDescription', 'creator'].map(key => {
-     return {[`template.${key}`]: {$regex: searchKey, $options: "i"}} 
+app.get('/search', (req, res) => {
+  const searchKey = req.query && req.query.search;
+  console.log('search', req.query);
+  const query = {
+    $or: ['templateName', 'templateDescription', 'creator'].map(key => {
+      return {[`template.${key}`]: {$regex: searchKey, $options: 'i'}};
     })
-  ]}
+  };
+  console.log(JSON.stringify(query, null, 2));
   fetch(req.app.locals.db, 'programs', query, 20).then((result: any) => {
-    console.log('search', result.length);
     res.send(JSON.stringify(result));
   });
 });
 
-app.get("/recent", (req, res) => {
+app.get('/recent', (req, res) => {
   console.log('recent');
   fetch(req.app.locals.db, 'programs', null, 20).then((result: any) => {
-    console.log(result.length)
+    console.log(result.length);
     res.send(JSON.stringify(result));
   });
 });
@@ -56,7 +46,6 @@ app.get('/img-lookup', (req, res) => {
   console.log(req);
   res.sendStatus(200);
 });
-
 
 app.post('/publish', (req, res) => {
   const body = req.body;
