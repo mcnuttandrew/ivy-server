@@ -41,17 +41,44 @@ app.get('/data-field', (req, res) => {
   res.sendStatus(200);
 });
 
-app.get('/img-lookup', (req, res) => {
-  console.log('img-lookup');
-  console.log(req);
+app.use('/thumbnail', (req, res) => {
+  const authorKey = req.query && req.query.author;
+  const templateName = req.query && req.query.template;
+  const query = {
+    $and: [{templateName: {$eq: templateName}}, {authorKey: {$eq: authorKey}}]
+  };
+  fetch(req.app.locals.db, 'thumbnails', query).then((result: any) => {
+    if (!result || !result.length) {
+      console.log('nothing found for', authorKey, templateName, result);
+      res.send('');
+      return;
+    }
+    console.log('thumbnail for', authorKey, templateName);
+    res.writeHead(200, {'Content-Type': 'image/jpeg'});
+    res.end(result[0].templateImg, 'binary');
+  });
+});
+
+app.post('/save-thumbnail', (req, res) => {
+  const body = req.body;
+  const {templateName, authorKey, templateImg} = body;
+  const db = req.app.locals.db;
+  console.log('save thumbnail for', templateName, authorKey);
+  // db.collection('thumbnails').insertOne({templateName, authorKey, templateImg});
+  db.collection('thumbnails').updateOne(
+    {_id: `${templateName}-${authorKey}`},
+    {$set: {templateName, authorKey, templateImg}},
+    {upsert: true}
+  );
+
   res.sendStatus(200);
 });
 
 app.post('/publish', (req, res) => {
   const body = req.body;
-  const {template, templateImg, creator} = body;
+  const {template, creator} = body;
   const db = req.app.locals.db;
-  db.collection('programs').insertOne({template, templateImg, creator});
+  db.collection('programs').insertOne({template, creator});
 
   res.sendStatus(200);
 });

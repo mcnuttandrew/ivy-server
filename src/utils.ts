@@ -2,7 +2,7 @@ export const fetch = (
   db: any,
   collectionName: string,
   query: any,
-  limit: number | null
+  limit?: number | null
 ): Promise<any> => {
   const collection = db.collection(collectionName);
   return new Promise((resolve, reject) => {
