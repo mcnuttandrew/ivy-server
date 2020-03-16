@@ -64,7 +64,6 @@ app.post('/save-thumbnail', (req, res) => {
   const {templateName, authorKey, templateImg} = body;
   const db = req.app.locals.db;
   console.log('save thumbnail for', templateName, authorKey);
-  // db.collection('thumbnails').insertOne({templateName, authorKey, templateImg});
   db.collection('thumbnails').updateOne(
     {_id: `${templateName}-${authorKey}`},
     {$set: {templateName, authorKey, templateImg}},
@@ -76,11 +75,35 @@ app.post('/save-thumbnail', (req, res) => {
 
 app.post('/publish', (req, res) => {
   const body = req.body;
-  const {template, creator} = body;
+  const {template} = body;
   const db = req.app.locals.db;
-  db.collection('programs').insertOne({template, creator});
+  db.collection('programs').insertOne({
+    template,
+    _id: `${template.templateName}-${template.templateAuthor}`
+  });
 
   res.sendStatus(200);
+});
+
+app.get('/remove', (req, res) => {
+  const templateAuthor = req.query && req.query.templateAuthor;
+  const templateName = req.query && req.query.templateName;
+  const userName = req.query && req.query.userName;
+  console.log('delete', templateAuthor, templateName, userName);
+  if (userName !== templateAuthor) {
+    res.sendStatus(403);
+    return;
+  }
+  const db = req.app.locals.db;
+  const query = {_id: `${templateName}-${templateAuthor}`};
+  // this should probably be atomic?
+  Promise.all([
+    db.collection('programs').deleteOne(query),
+    db.collection('thumbnails').deleteOne(query)
+  ]).then(() => {
+    console.log('deletes successful');
+    res.sendStatus(200);
+  });
 });
 
 MongoClient.connect(MONGO_URL, {}, (err, client) => {
