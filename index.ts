@@ -22,14 +22,14 @@ app.get('/search', (req, res) => {
     })
   };
   console.log(JSON.stringify(query, null, 2));
-  fetch(req.app.locals.db, 'programs', query, 20).then((result: any) => {
+  fetch(req.app.locals.db, 'programs', query, 50).then((result: any) => {
     res.send(JSON.stringify(result));
   });
 });
 
 app.get('/recent', (req, res) => {
   console.log('recent');
-  fetch(req.app.locals.db, 'programs', null, 20).then((result: any) => {
+  fetch(req.app.locals.db, 'programs', null, 50).then((result: any) => {
     console.log(result.length);
     res.send(JSON.stringify(result));
   });
