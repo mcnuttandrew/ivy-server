@@ -4,6 +4,7 @@ const app = express();
 import bodyParser from 'body-parser';
 import {fetch} from './src/utils';
 import cors from 'cors';
+import fs from 'fs';
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017';
@@ -41,9 +42,9 @@ app.get('/data-field', (req, res) => {
   res.sendStatus(200);
 });
 
-app.use('/thumbnail', (req, res) => {
-  const authorKey = req.query && req.query.author;
-  const templateName = req.query && req.query.template;
+app.get('/thumbnail/:authorKey/:templateName', (req, res) => {
+  const authorKey = req.params.authorKey;
+  const templateName = req.params.templateName;
   const query = {
     $and: [{templateName: {$eq: templateName}}, {authorKey: {$eq: authorKey}}]
   };
@@ -53,9 +54,10 @@ app.use('/thumbnail', (req, res) => {
       res.send('');
       return;
     }
-    console.log('thumbnail for', authorKey, templateName);
-    res.writeHead(200, {'Content-Type': 'image/jpeg'});
-    res.end(result[0].templateImg, 'binary');
+    const img = result[0].templateImg;
+    const base64Image = img.split(';base64,').pop();
+    res.set('Content-Type', 'image/jpeg');
+    res.send(new Buffer(base64Image, 'base64'));
   });
 });
 
@@ -106,12 +108,18 @@ app.get('/remove', (req, res) => {
   });
 });
 
-MongoClient.connect(MONGO_URL, {}, (err, client) => {
-  if (err) {
-    console.log(`Failed to connect to the database. ${err.stack}`);
+MongoClient.connect(
+  MONGO_URL,
+  {
+    useUnifiedTopology: true
+  },
+  (err, client) => {
+    if (err) {
+      console.log(`Failed to connect to the database. ${err.stack}`);
+    }
+    app.locals.db = client.db(MONGO_DB);
+    app.listen(PORT, () => {
+      console.log(`Node.js app is listening at http://localhost:${PORT}`);
+    });
   }
-  app.locals.db = client.db(MONGO_DB);
-  app.listen(PORT, () => {
-    console.log(`Node.js app is listening at http://localhost:${PORT}`);
-  });
-});
+);
