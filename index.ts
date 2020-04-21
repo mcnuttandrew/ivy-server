@@ -4,11 +4,10 @@ const app = express();
 import bodyParser from 'body-parser';
 import {fetch} from './src/utils';
 import cors from 'cors';
-import fs from 'fs';
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-const MONGO_DB = process.env.MONGODB || 'HYDRA_SERVER';
+const MONGO_DB = process.env.MONGODB || 'IVY_SERVER';
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
