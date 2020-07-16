@@ -60,6 +60,19 @@ app.get('/thumbnail/:authorKey/:templateName', (req, res) => {
   });
 });
 
+app.get('/:authorKey/:templateName', (req, res) => {
+  const authorKey = req.params.authorKey;
+  const templateName = req.params.templateName;
+  const query = {_id: `${templateName}-${authorKey}`};
+  fetch(req.app.locals.db, 'programs', query).then((result: any) => {
+    if (!result || !result.length) {
+      res.send('null');
+      return;
+    }
+    res.send(JSON.stringify(result[0]));
+  });
+});
+
 app.post('/save-thumbnail', (req, res) => {
   const body = req.body;
   const {templateName, authorKey, templateImg} = body;
