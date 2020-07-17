@@ -8,15 +8,17 @@
     "prestart": "npm run build",
     "start": "node .",
     "serve": "node server.js",
-    "lint": "eslint server.js"
+    "lint": "eslint server.js",
+    "migrate": "node-pg-migrate"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@types/cors": "^2.8.6",
     "@types/express": "^4.17.2",
-    "@types/mongodb": "^3.3.14",
     "@types/node": "^13.1.8",
+    "@types/node-pg-migrate": "^2.3.1",
+    "@types/pg": "^7.14.4",
     "@typescript-eslint/eslint-plugin": "^2.4.0",
     "@typescript-eslint/parser": "^2.4.0",
     "eslint": "^6.5.1",
@@ -32,7 +34,10 @@
   "dependencies": {
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "mongodb": "^3.5.1"
+    "hoopoe": "^1.0.1",
+    "node-pg-migrate": "^5.3.0",
+    "pg": "^8.3.0"
   }
 }
