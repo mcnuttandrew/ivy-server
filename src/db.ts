@@ -6,7 +6,13 @@ const connectionString = `postgresql://${process.env.DB_USER}:${process.env.DB_P
 
 const pool = new Pool({
   connectionString: isProduction ? process.env.DATABASE_URL : connectionString,
+  // ssl: isProduction
+  // rejectUnauthorized: false
   ssl: isProduction
+    ? {
+        rejectUnauthorized: false
+      }
+    : false
 });
 export const query = (
   text: string,
