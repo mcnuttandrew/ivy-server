@@ -9,7 +9,8 @@
     "start": "node .",
     "serve": "node server.js",
     "lint": "eslint server.js",
-    "migrate": "node-pg-migrate"
+    "migrate": "node-pg-migrate",
+    "heroku-cleanup": "npm run migrate up"
   },
   "author": "",
   "license": "ISC",
