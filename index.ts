@@ -4,8 +4,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import {query} from './src/db';
 const PORT = process.env.PORT || 5000;
-// const MONGO_URL = process.env.MONGODB_URI || 'mongodb://localhost:27017';
-// const MONGO_DB = process.env.MONGODB || 'IVY_SERVER';
 
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
@@ -13,7 +11,25 @@ app.use(cors());
 
 app.get('/recent', (req, res) => {
   console.log('recent');
-  query('SELECT * FROM templates ORDER BY id LIMIT 50;').then(result => {
+  query('SELECT * FROM templates;').then(result => {
+    res.send(JSON.stringify(result.rows));
+  });
+});
+
+app.get('/recent-names', (req, res) => {
+  console.log('recent names');
+  const queryInstances = `
+SELECT a.name, a.creator, b.template_name, b.template_creator, b.name as instance_name, b.dataset
+FROM templates AS a 
+FULL JOIN template_instances AS b 
+ON a.name=b.template_name AND a.creator=b.template_creator;
+  `;
+  const queryTemplates = `
+SELECT creator, name 
+FROM templates 
+ORDER BY id LIMIT 50;
+  `;
+  query(queryInstances).then(result => {
     res.send(JSON.stringify(result.rows));
   });
 });
@@ -58,10 +74,31 @@ app.get('/thumbnail/:authorKey/:templateName', (req, res) => {
 app.get('/:authorKey/:templateName', (req, res) => {
   const authorKey = req.params.authorKey;
   const templateName = req.params.templateName;
-  query('SELECT * FROM templates WHERE creator=$1 and name=$2 ORDER BY id;', [
+  console.log(`get ${authorKey} ${templateName}`);
+  query('SELECT * FROM templates WHERE creator=$1 and name=$2;', [
     authorKey,
     templateName
   ]).then(result => {
+    res.send(JSON.stringify(result.rows[0]));
+  });
+});
+
+app.get('/:authorKey/:templateName/:instanceName', (req, res) => {
+  const authorKey = req.params.authorKey;
+  const templateName = req.params.templateName;
+  const instanceName = req.params.instanceName;
+  console.log(`get ${authorKey} ${templateName} ${instanceName}`);
+  const variables = [templateName, authorKey, instanceName];
+  const queryForInstance = `
+SELECT * 
+FROM template_instances 
+WHERE template_name=$1 and template_creator=$2 and name=$3;
+`;
+  query(queryForInstance, variables).then(result => {
+    if (!result.rows.length) {
+      res.send([]);
+      return;
+    }
     res.send(JSON.stringify(result.rows[0]));
   });
 });
@@ -89,6 +126,7 @@ app.post('/publish', (req, res) => {
   const {templateAuthor, templateName} = template;
 
   console.log('save template', templateName, templateAuthor);
+  // TODO should enable a upsert style rewrite
   query(
     'INSERT INTO templates (template, name, creator) VALUES ($1, $2, $3);',
     [template, templateName, templateAuthor]
@@ -102,13 +140,27 @@ app.post('/publish', (req, res) => {
 
 app.post('/publish-instance', (req, res) => {
   const body = req.body;
-  const {template} = body;
-  const {templateAuthor, templateName} = template;
-
-  console.log('save template', templateName, templateAuthor);
+  const {
+    templateAuthor,
+    templateName,
+    templateMap,
+    templateInstance,
+    dataset
+  } = body;
+  // TODOOOOOO
+  // algo trigger a thumbnail build from here
+  // also publish-instance should allow for a upsert style rewrite
+  console.log('save instance');
+  const inputs = [
+    templateAuthor,
+    templateName,
+    templateInstance,
+    templateMap,
+    dataset
+  ];
   query(
-    'INSERT INTO templates (template, name, creator) VALUES ($1, $2, $3);',
-    [template, templateName, templateAuthor]
+    'INSERT INTO template_instances (template_creator, template_name, name, template_instance, dataset) VALUES ($1, $2, $3, $4, $5);',
+    inputs
   )
     .then(() => res.sendStatus(200))
     .catch(e => {

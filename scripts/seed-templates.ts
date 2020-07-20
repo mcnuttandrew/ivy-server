@@ -15,6 +15,9 @@ executeCommandLineCmd(`ls ${folder}`).then(({stdout}) => {
         executeCommandLineCmd(
           `curl -d '${file}' -H 'Content-Type: application/json' http://localhost:5000/publish`
         );
+        // executeCommandLineCmd(
+        //   `curl -d '${file}' -H 'Content-Type: application/json' http://hydra-template-server.herokuapp.com/publish`
+        // );
       })
   );
   executePromisesInSeries(promises);
