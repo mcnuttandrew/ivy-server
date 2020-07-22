@@ -41,9 +41,13 @@ exports.up = pgm => {
       dataset: {
         notNull: true,
         type: 'varchar(1000)'
+      },
+      thumbnail: {
+        type: 'text'
       }
     },
     {
+      // i think this constraint does nothing
       constraints: {
         fk: 'FOREIGN KEY (templateCreator, templateName) REFERENCES templates'
       }

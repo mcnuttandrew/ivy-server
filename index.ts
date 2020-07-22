@@ -11,6 +11,11 @@ app.use(cors());
 
 app.get('/recent', (req, res) => {
   console.log('recent');
+  const queryString = `
+SELECT DISTINCT name, creator
+FROM templates
+WHERE creator=$1 and name=$2;
+    `;
   query('SELECT * FROM templates;').then(result => {
     res.send(JSON.stringify(result.rows));
   });
@@ -18,9 +23,42 @@ app.get('/recent', (req, res) => {
 
 app.get('/recent-names', (req, res) => {
   console.log('recent names');
+  //   const queryInstances = `
+  // SELECT
+  //   a.name,
+  //   a.creator,
+  //   b.template_name,
+  //   b.template_creator,
+  //   b.name as instance_name,
+  //   b.dataset,
+  //   a.template->'templateDescription' as template_description,
+  //   a.template->'templateLanguage' as template_language
+  // FROM templates AS a
+  // FULL JOIN template_instances AS b
+  // ON a.name=b.template_name AND a.creator=b.template_creator;
+  //   `;
   const queryInstances = `
-SELECT a.name, a.creator, b.template_name, b.template_creator, b.name as instance_name, b.dataset
-FROM templates AS a 
+SELECT 
+  a.name, 
+  a.creator, 
+  b.template_name, 
+  b.template_creator, 
+  b.name as instance_name, 
+  b.dataset, 
+  a.template->'templateDescription' as template_description,
+  a.template->'templateLanguage' as template_language
+FROM (
+  SELECT innerA.*
+  FROM templates as innerA
+    INNER JOIN (
+      SELECT MAX(id) AS target_id, creator, name
+      FROM templates
+      GROUP BY creator, name
+    ) AS innerB
+  ON  innerA.creator = innerB.creator
+  AND innerA.name = innerB.name
+  AND innerA.id = innerB.target_id
+) AS a
 FULL JOIN template_instances AS b 
 ON a.name=b.template_name AND a.creator=b.template_creator;
   `;
@@ -34,51 +72,60 @@ ORDER BY id LIMIT 50;
   });
 });
 
-// this is get thumbnail for template
-// need an additional route for getting thumbnail for instance
 app.get('/thumbnail/:authorKey/:templateName', (req, res) => {
-  //  USED REPLACE
-  console.log('thumb');
-  res.sendStatus(200);
-  // roughly: pick most recent instance, lookup that ones thumnail, return
+  const authorKey = req.params.authorKey;
+  const templateName = req.params.templateName;
+  const variables = [templateName, authorKey];
+  const queryForInstance = `
+  SELECT thumbnail
+  FROM template_instances 
+  WHERE template_name=$1 and template_creator=$2 ORDER BY id DESC;
+  `;
+  query(queryForInstance, variables).then(result => {
+    if (!result.rows.length) {
+      res.send(null);
+      return;
+    }
+    const img = result.rows[0].thumbnail;
+    const base64Image = img.split(';base64,').pop();
+    res.set('Content-Type', 'image/jpeg');
+    res.send(new Buffer(base64Image, 'base64'));
+  });
+});
 
-  // const authorKey = req.params.authorKey;
-  // const templateName = req.params.templateName;
-  // const query = {
-  //   $and: [
-  //     {
-  //       templateName: {
-  //         $eq: templateName
-  //       }
-  //     },
-  //     {
-  //       authorKey: {
-  //         $eq: authorKey
-  //       }
-  //     }
-  //   ]
-  // };
-  // fetch(req.app.locals.db, 'thumbnails', query).then((result: any) => {
-  //   if (!result || !result.length) {
-  //     console.log('nothing found for', authorKey, templateName, result);
-  //     res.send('');
-  //     return;
-  //   }
-  //   const img = result[0].templateImg;
-  //   const base64Image = img.split(';base64,').pop();
-  //   res.set('Content-Type', 'image/jpeg');
-  //   res.send(new Buffer(base64Image, 'base64'));
-  // });
+app.get('/thumbnail/:authorKey/:templateName/:templateInstance', (req, res) => {
+  const authorKey = req.params.authorKey;
+  const templateName = req.params.templateName;
+  const templateInstance = req.params.templateInstance;
+  const variables = [templateName, authorKey, templateInstance];
+  const queryForInstance = `
+  SELECT thumbnail
+  FROM template_instances 
+  WHERE template_name=$1 and template_creator=$2 and name=$3;
+  `;
+  query(queryForInstance, variables).then(result => {
+    if (!result.rows.length) {
+      res.send(null);
+      return;
+    }
+    const img = result.rows[0].thumbnail;
+    const base64Image = img.split(';base64,').pop();
+    res.set('Content-Type', 'image/jpeg');
+    res.send(new Buffer(base64Image, 'base64'));
+  });
 });
 
 app.get('/:authorKey/:templateName', (req, res) => {
   const authorKey = req.params.authorKey;
   const templateName = req.params.templateName;
   console.log(`get ${authorKey} ${templateName}`);
-  query('SELECT * FROM templates WHERE creator=$1 and name=$2;', [
-    authorKey,
-    templateName
-  ]).then(result => {
+  const queryString = `
+  SELECT *
+  FROM templates
+  WHERE creator=$1 and name=$2
+  ORDER BY created_at DESC;
+  `;
+  query(queryString, [authorKey, templateName]).then(result => {
     res.send(JSON.stringify(result.rows[0]));
   });
 });
@@ -92,7 +139,8 @@ app.get('/:authorKey/:templateName/:instanceName', (req, res) => {
   const queryForInstance = `
 SELECT * 
 FROM template_instances 
-WHERE template_name=$1 and template_creator=$2 and name=$3;
+WHERE template_name=$1 and template_creator=$2 and name=$3
+ORDER BY created_at DESC;
 `;
   query(queryForInstance, variables).then(result => {
     if (!result.rows.length) {
@@ -103,23 +151,6 @@ WHERE template_name=$1 and template_creator=$2 and name=$3;
   });
 });
 
-// app.post('/save-thumbnail', (req, res) => {
-//   //  USED/ REMOVE
-//   console.log('save thumb');
-//   res.sendStatus(200);
-//   // const body = req.body;
-//   // const {templateName, authorKey, templateImg} = body;
-//   // const db = req.app.locals.db;
-//   // console.log('save thumbnail for', templateName, authorKey);
-//   // db.collection('thumbnails').updateOne(
-//   //   {_id: `${templateName}-${authorKey}`},
-//   //   {$set: {templateName, authorKey, templateImg}},
-//   //   {upsert: true}
-//   // );
-
-//   // res.sendStatus(200);
-// });
-
 app.post('/publish', (req, res) => {
   const body = req.body;
   const {template} = body;
@@ -127,10 +158,12 @@ app.post('/publish', (req, res) => {
 
   console.log('save template', templateName, templateAuthor);
   // TODO should enable a upsert style rewrite
-  query(
-    'INSERT INTO templates (template, name, creator) VALUES ($1, $2, $3);',
-    [template, templateName, templateAuthor]
-  )
+  const queryString = `
+INSERT INTO templates 
+(template, name, creator) 
+VALUES ($1, $2, $3);
+  `;
+  query(queryString, [template, templateName, templateAuthor])
     .then(() => res.sendStatus(200))
     .catch(e => {
       console.log(e);
@@ -145,10 +178,10 @@ app.post('/publish-instance', (req, res) => {
     templateName,
     templateMap,
     templateInstance,
-    dataset
+    dataset,
+    thumbnail
   } = body;
   // TODOOOOOO
-  // algo trigger a thumbnail build from here
   // also publish-instance should allow for a upsert style rewrite
   console.log('save instance');
   const inputs = [
@@ -156,12 +189,15 @@ app.post('/publish-instance', (req, res) => {
     templateName,
     templateInstance,
     templateMap,
-    dataset
+    dataset,
+    thumbnail
   ];
-  query(
-    'INSERT INTO template_instances (template_creator, template_name, name, template_instance, dataset) VALUES ($1, $2, $3, $4, $5);',
-    inputs
-  )
+  const queryString = `
+INSERT INTO template_instances 
+(template_creator, template_name, name, template_instance, dataset, thumbnail) 
+VALUES ($1, $2, $3, $4, $5, $6);
+  `;
+  query(queryString, inputs)
     .then(() => res.sendStatus(200))
     .catch(e => {
       console.log(e);
@@ -169,31 +205,30 @@ app.post('/publish-instance', (req, res) => {
     });
 });
 
-app.get('/remove', (req, res) => {
+app.post('/remove', (req, res) => {
   //  USED REPLACE
-  console.log('save template');
-  res.sendStatus(200);
-
-  // const templateAuthor = req.query && req.query.templateAuthor;
-  // const templateName = req.query && req.query.templateName;
-  // const userName = req.query && req.query.userName;
-  // console.log('delete', templateAuthor, templateName, userName);
-  // if (userName !== templateAuthor) {
-  //   res.sendStatus(403);
-  //   return;
-  // }
-  // const db = req.app.locals.db;
-  // const query = {
-  //   _id: `${templateName}-${templateAuthor}`
-  // };
-  // // this should probably be atomic?
-  // Promise.all([
-  //   db.collection('programs').deleteOne(query),
-  //   db.collection('thumbnails').deleteOne(query)
-  // ]).then(() => {
-  //   console.log('deletes successful');
-  //   res.sendStatus(200);
-  // });
+  const body = req.body;
+  const {templateAuthor, templateName, userName} = body;
+  console.log('remove template', templateAuthor, templateName, userName);
+  if (userName !== templateAuthor) {
+    return res.sendStatus(500);
+  }
+  const queryString1 = `
+DELETE FROM templates 
+WHERE creator=$1 AND name=$2;
+  `;
+  const queryString2 = `
+DELETE FROM template_instances
+WHERE template_creator=$1 AND template_name=$2;
+  `;
+  const inputs = [templateAuthor, templateName];
+  query(queryString1, inputs)
+    .then(() => query(queryString2, inputs).then(() => res.sendStatus(200)))
+    .catch(e => {
+      console.log(e);
+      res.sendStatus(300);
+    });
+  // res.sendStatus(200);
 });
 
 app.listen(PORT, () => {
