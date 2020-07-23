@@ -9,20 +9,33 @@ app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 app.use(cors());
 
-app.get('/recent', (req, res) => {
-  console.log('recent');
-  const queryString = `
-SELECT DISTINCT name, creator
-FROM templates
-WHERE creator=$1 and name=$2;
-    `;
-  query('SELECT * FROM templates;').then(result => {
+const dedupQuery = `
+SELECT innerA.*
+  FROM templates as innerA
+    INNER JOIN (
+      SELECT MAX(id) AS target_id, creator, name
+      FROM templates
+      GROUP BY creator, name
+    ) AS innerB
+  ON  innerA.creator = innerB.creator
+  AND innerA.name = innerB.name
+  AND innerA.id = innerB.target_id
+`;
+app.get('/templates', (req, res) => {
+  console.log('templates');
+  // TODO make this deduplicate
+  //   const queryString = `
+  // SELECT DISTINCT name, creator
+  // FROM templates
+  // WHERE creator=$1 and name=$2;
+  //     `;
+  query(`${dedupQuery};`).then(result => {
     res.send(JSON.stringify(result.rows));
   });
 });
 
-app.get('/recent-names', (req, res) => {
-  console.log('recent names');
+app.get('/template-instances', (req, res) => {
+  console.log('template instances');
   //   const queryInstances = `
   // SELECT
   //   a.name,
@@ -33,40 +46,35 @@ app.get('/recent-names', (req, res) => {
   //   b.dataset,
   //   a.template->'templateDescription' as template_description,
   //   a.template->'templateLanguage' as template_language
-  // FROM templates AS a
+  // FROM (
+  //   SELECT innerA.*
+  //   FROM templates as innerA
+  //     INNER JOIN (
+  //       SELECT MAX(id) AS target_id, creator, name
+  //       FROM templates
+  //       GROUP BY creator, name
+  //     ) AS innerB
+  //   ON  innerA.creator = innerB.creator
+  //   AND innerA.name = innerB.name
+  //   AND innerA.id = innerB.target_id
+  // ) AS a
   // FULL JOIN template_instances AS b
   // ON a.name=b.template_name AND a.creator=b.template_creator;
   //   `;
   const queryInstances = `
 SELECT 
-  a.name, 
-  a.creator, 
-  b.template_name, 
-  b.template_creator, 
-  b.name as instance_name, 
-  b.dataset, 
   a.template->'templateDescription' as template_description,
-  a.template->'templateLanguage' as template_language
-FROM (
-  SELECT innerA.*
-  FROM templates as innerA
-    INNER JOIN (
-      SELECT MAX(id) AS target_id, creator, name
-      FROM templates
-      GROUP BY creator, name
-    ) AS innerB
-  ON  innerA.creator = innerB.creator
-  AND innerA.name = innerB.name
-  AND innerA.id = innerB.target_id
-) AS a
-FULL JOIN template_instances AS b 
+  a.template->'templateLanguage' as template_language,
+  b.*
+FROM (${dedupQuery}) AS a
+RIGHT JOIN template_instances AS b 
 ON a.name=b.template_name AND a.creator=b.template_creator;
   `;
-  const queryTemplates = `
-SELECT creator, name 
-FROM templates 
-ORDER BY id LIMIT 50;
-  `;
+  //   const queryTemplates = `
+  // SELECT creator, name
+  // FROM templates
+  // ORDER BY id LIMIT 50;
+  //   `;
   query(queryInstances).then(result => {
     res.send(JSON.stringify(result.rows));
   });
