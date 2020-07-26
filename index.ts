@@ -39,7 +39,7 @@ app.get('/template-instances', (req, res) => {
   //   const queryInstances = `
   // SELECT
   //   a.name,
-  //   a.creator,
+  //   a.creator,1
   //   b.template_name,
   //   b.template_creator,
   //   b.name as instance_name,
@@ -62,10 +62,7 @@ app.get('/template-instances', (req, res) => {
   // ON a.name=b.template_name AND a.creator=b.template_creator;
   //   `;
   const queryInstances = `
-SELECT 
-  a.template->'templateDescription' as template_description,
-  a.template->'templateLanguage' as template_language,
-  b.*
+SELECT b.*
 FROM (${dedupQuery}) AS a
 RIGHT JOIN template_instances AS b 
 ON a.name=b.template_name AND a.creator=b.template_creator;
@@ -237,6 +234,15 @@ WHERE template_creator=$1 AND template_name=$2;
       res.sendStatus(300);
     });
   // res.sendStatus(200);
+});
+
+app.get('/eject', (req, res) => {
+  Promise.all([
+    query('SELECT * FROM templates;'),
+    query('SELECT * FROM template_instances;')
+  ]).then(([templates, templateInstances]) => {
+    res.send(JSON.stringify({templates, templateInstances}, null, 2));
+  });
 });
 
 app.listen(PORT, () => {
