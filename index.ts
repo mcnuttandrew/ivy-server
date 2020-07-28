@@ -183,24 +183,26 @@ app.post('/publish-instance', (req, res) => {
     templateName,
     templateMap,
     templateInstance,
+    instanceCreator,
     dataset,
     thumbnail
   } = body;
   // TODOOOOOO
   // also publish-instance should allow for a upsert style rewrite
-  console.log('save instance');
+  console.log('save instance', templateAuthor, templateName, templateInstance);
   const inputs = [
     templateAuthor,
     templateName,
     templateInstance,
     templateMap,
+    instanceCreator,
     dataset,
     thumbnail
   ];
   const queryString = `
 INSERT INTO template_instances 
-(template_creator, template_name, name, template_instance, dataset, thumbnail) 
-VALUES ($1, $2, $3, $4, $5, $6);
+(template_creator, template_name, name, template_instance, instance_creator, dataset, thumbnail) 
+VALUES (${inputs.map((_, idx) => `$${idx + 1}`).join(', ')});
   `;
   query(queryString, inputs)
     .then(() => res.sendStatus(200))
@@ -211,7 +213,6 @@ VALUES ($1, $2, $3, $4, $5, $6);
 });
 
 app.post('/remove', (req, res) => {
-  //  USED REPLACE
   const body = req.body;
   const {templateAuthor, templateName, userName} = body;
   console.log('remove template', templateAuthor, templateName, userName);
@@ -233,7 +234,32 @@ WHERE template_creator=$1 AND template_name=$2;
       console.log(e);
       res.sendStatus(300);
     });
-  // res.sendStatus(200);
+});
+
+app.post('/remove-instance', (req, res) => {
+  const body = req.body;
+  const {templateAuthor, templateName, instanceName, userName} = body;
+  console.log(
+    'remove template',
+    templateAuthor,
+    templateName,
+    instanceName,
+    userName
+  );
+  if (userName !== instanceName) {
+    return res.sendStatus(500);
+  }
+  const queryString = `
+DELETE FROM template_instances
+WHERE template_creator=$1 AND template_name=$2 AND name=$3;
+  `;
+  const inputs = [templateAuthor, templateName, instanceName];
+  query(queryString, inputs)
+    .then(() => res.sendStatus(200))
+    .catch(e => {
+      console.log(e);
+      res.sendStatus(300);
+    });
 });
 
 app.get('/eject', (req, res) => {
