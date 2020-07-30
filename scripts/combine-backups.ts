@@ -29,12 +29,14 @@ function rebuildInstances() {
           const file = JSON.stringify({
             templateAuthor: row.template_creator,
             templateName: row.template_name,
-            templateMap: row.template_instance,
+            // templateMap: row.template_instance,
             // just a one time to thing to fix the instance collection
-            // templateMap: {
-            //   paramValues: row.template_instance,
-            //   systemValues: {viewsToMaterialize: {}, dataTransforms: []}
-            // },
+            templateMap: row.template_instance.paramValues
+              ? row.template_instance
+              : {
+                  paramValues: row.template_instance,
+                  systemValues: {viewsToMaterialize: {}, dataTransforms: []}
+                },
             templateInstance: row.name,
             instanceCreator: row.instance_creator || 'Aquila-Volans-16',
             dataset: row.dataset,
@@ -73,7 +75,7 @@ function rebuildTemplates() {
           const file = JSON.stringify({template: row.template});
           return executeCommandLineCmd(
             `curl -d '${file}' -H 'Content-Type: application/json' ${prefix}/publish`
-          );
+          ).catch(e => console.log(e));
         });
         return executePromisesInSeries(promises);
       });
