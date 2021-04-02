@@ -1,6 +1,6 @@
 # Ivy Server
 
-This is the backend to the Ivy application described in our paper "Ivy: An Integrated Visualization Editor via Parameterized Declarative Templates". In consists of a simple express wrapper over MongoDB that enables sharing of templates and template thumbnails.
+This is the backend to the Ivy application described in our paper "Ivy: An Integrated Visualization Editor via Parameterized Declarative Templates". In consists of a simple express wrapper over postgres that enables sharing of templates and template thumbnails.
 
 ## Setup
 
