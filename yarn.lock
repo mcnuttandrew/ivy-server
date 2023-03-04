@@ -920,11 +920,6 @@ has@^1.0.3:
   dependencies:
     function-bind "^1.1.1"
 
-hoopoe@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/hoopoe/-/hoopoe-1.0.1.tgz#7019cbd9a5edceb2d7448d3d627996b8235a6d30"
-  integrity sha512-3IdeezHIrW1Sqb23tyWSOEGMwGmMszSx7RkSpx9BiCH5lwyylF0Y2M8FDORLukUlXx4kiIQuTLkagVhinfX6OQ==
-
 http-errors@1.7.2:
   version "1.7.2"
   resolved "https://registry.yarnpkg.com/http-errors/-/http-errors-1.7.2.tgz#4f5029cf13239f31036e5b2e55292bcfbcc85c8f"

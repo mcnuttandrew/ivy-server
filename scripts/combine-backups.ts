@@ -1,9 +1,45 @@
-const {
-  getFile,
-  executeCommandLineCmd,
-  executePromisesInSeries
-} = require('hoopoe');
+const fs = require('fs');
+const {exec} = require('child_process');
 
+/**
+ * Get a file (as a string)
+ * @param fileName - the file name to get
+ */
+export const getFile = (fileName: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    fs.readFile(fileName, 'utf8', (err: string, data: string) => {
+      if (err) {
+        console.log('READ FILE ERROR', fileName);
+        reject(err);
+        return;
+      }
+      resolve(data);
+    });
+  });
+export function executePromisesInSeries(tasks: (() => Promise<any>)[]) {
+  return tasks.reduce(
+    (promiseChain, task) => promiseChain.then(task),
+    Promise.resolve([])
+  );
+}
+
+/**
+ * Execute a bash command
+ * @param cmd - command to execute
+ */
+export function executeCommandLineCmd(
+  cmd: string
+): Promise<{stdout: string, stderr: string}> {
+  return new Promise((resolve, reject) => {
+    exec(cmd, (err: string, stdout: string, stderr: string) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve({stdout, stderr});
+      }
+    });
+  });
+}
 // const prefix = 'http://hydra-template-server.herokuapp.com';
 const prefix = 'http://localhost:5000';
 function rebuildInstances() {

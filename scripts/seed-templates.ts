@@ -2,7 +2,7 @@ const {
   getFile,
   executeCommandLineCmd,
   executePromisesInSeries
-} = require('hoopoe');
+} = require('./combine-backups');
 
 const folder = '/Users/amc/ivy-artifact/artifact/example-templates';
 executeCommandLineCmd(`ls ${folder}`).then(({stdout}) => {
